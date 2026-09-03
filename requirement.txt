@@ -1,0 +1,6 @@
+composer create-project laravel/laravel=12 Project
+
+composer require barryvdh/laravel-dompdf
+composer require maatwebsite/excel
+composer require laravel/sanctum
+composer require livewire/livewire
