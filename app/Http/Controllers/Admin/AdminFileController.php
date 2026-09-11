@@ -10,6 +10,22 @@ use Illuminate\Support\Facades\Storage;
 
 class AdminFileController extends Controller
 {
+    /**
+     * Résout le disque de stockage sur lequel se trouve physiquement un fichier.
+     * Cherche d'abord sur 'private' (nouveau comportement), puis sur 'public' (ancien comportement).
+     * Retourne null si le fichier est introuvable sur les deux disques.
+     */
+    private function resolveDisk(File $file): ?string
+    {
+        if (Storage::disk('private')->exists($file->path)) {
+            return 'private';
+        }
+        if (Storage::disk('public')->exists($file->path)) {
+            return 'public';
+        }
+        return null;
+    }
+
     public function store(Request $request)
     {
         $request->validate([
@@ -21,10 +37,13 @@ class AdminFileController extends Controller
         $uploadedFiles = $request->file('files');
 
         foreach ($uploadedFiles as $uploaded) {
+            // Stockage sur le disque 'private', organisé comme UserFileController
+            $path = $uploaded->store('files/' . auth()->id() . '/' . date('Y/m'), 'private');
+
             $file = File::create([
                 'name' => $uploaded->getClientOriginalName(),
                 'original_name' => $uploaded->getClientOriginalName(),
-                'path' => $uploaded->store('uploads', 'public'),
+                'path' => $path,
                 'extension' => $uploaded->getClientOriginalExtension(),
                 'size' => $uploaded->getSize(),
                 'folder_id' => $request->folder_id,
@@ -54,11 +73,13 @@ class AdminFileController extends Controller
 
     public function preview(File $file)
     {
-        if (!Storage::disk('public')->exists($file->path)) {
-            abort(404, "Fichier physique introuvable sur le disque (Path: " . $file->path . ")");
+        $disk = $this->resolveDisk($file);
+
+        if (!$disk) {
+            abort(404, "Fichier physique introuvable sur les disques de stockage (Path: {$file->path})");
         }
 
-        $path = Storage::disk('public')->path($file->path);
+        $path = Storage::disk($disk)->path($file->path);
         $mimeType = mime_content_type($path);
         $supportedMimes = [
             'application/pdf',
@@ -89,11 +110,13 @@ class AdminFileController extends Controller
 
     public function download(File $file)
     {
-        if (!Storage::disk('public')->exists($file->path)) {
+        $disk = $this->resolveDisk($file);
+
+        if (!$disk) {
             return back()->with('error', 'Le fichier physique est introuvable sur le disque.');
         }
 
-        return Storage::disk('public')->download($file->path, $file->name);
+        return Storage::disk($disk)->download($file->path, $file->original_name ?? $file->name);
     }
 
     public function permissions(File $file)
@@ -161,10 +184,14 @@ class AdminFileController extends Controller
             "A supprimé définitivement le fichier : {$file->name}"
         );
 
-        if (Storage::disk('public')->exists($file->path)) {
-            Storage::disk('public')->delete($file->path);
+        $disk = $this->resolveDisk($file);
+        if ($disk) {
+            Storage::disk($disk)->delete($file->path);
         }
+
+        $file->permissions()->delete();
         $file->delete();
-        return redirect()->route('admin.explorer', $file->folder_id)->with('success', 'Actif supprimé définitivement du Vault.');
+
+        return redirect()->route('admin.explorer', $file->folder_id)->with('success', 'Fichier supprimé définitivement.');
     }
 }
