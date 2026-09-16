@@ -1,0 +1,50 @@
+name: Déploiement automatique sur Hostinger
+
+# Déclenche le workflow à chaque push sur la branche principale
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Déployer sur le serveur Hostinger
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Se connecter en SSH et déployer
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            # Aller dans le dossier du projet Laravel (PAS public_html)
+            cd ~/domains/design-atelier.site/laravel_app
+
+            # Récupérer les derniers changements depuis GitHub
+            echo "Récupération du code..."
+            git pull origin main
+
+            # Installer/mettre à jour les dépendances PHP
+            echo "Installation des dépendances Composer..."
+            composer2 install --no-dev --optimize-autoloader --no-interaction
+
+            # Appliquer les migrations de base de données en attente
+            echo "Application des migrations..."
+            php artisan migrate
+
+            # Vider les anciens caches avant de reconstruire
+            echo "Nettoyage des caches..."
+            php artisan config:clear
+            php artisan route:clear
+            php artisan view:clear
+
+            # Reconstruire les caches pour la production
+            echo "Mise en cache pour la production..."
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
+
+            echo "Déploiement terminé avec succès."
