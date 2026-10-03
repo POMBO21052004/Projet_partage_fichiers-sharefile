@@ -12,38 +12,54 @@ class UserFileController extends Controller
 {
     public function store(Request $request)
     {
-        $request->validate([
-            'files' => 'required|array',
-            'files.*' => 'required|file|max:3145728', // 3 Go max par fichier
-            'folder_id' => 'nullable|exists:folders,id',
-        ]);
-
-        $uploadedFiles = $request->file('files');
-        
-        foreach ($uploadedFiles as $uploaded) {
-            $originalName = $uploaded->getClientOriginalName();
-            $extension = $uploaded->getClientOriginalExtension();
-            $size = $uploaded->getSize();
-
-            // Store securely in private disk
-            $path = $uploaded->store('files/' . Auth::id() . '/' . date('Y/m'), 'private');
-
-            File::create([
-                'name' => $originalName,
-                'original_name' => $originalName,
-                'path' => $path,
-                'extension' => $extension,
-                'size' => $size,
-                'folder_id' => $request->folder_id ?? null,
-                'user_id' => Auth::id(),
+        try {
+            $request->validate([
+                'files' => 'required|array',
+                'files.*' => 'required|file|max:3145728', // 3 Go max par fichier
+                'folder_id' => 'nullable|exists:folders,id',
             ]);
-        }
 
-        if ($request->wantsJson() || $request->ajax()) {
-            return response()->json(['success' => true, 'message' => count($uploadedFiles) . ' fichier(s) uploadé(s) avec succès.']);
-        }
+            $uploadedFiles = $request->file('files');
+            
+            foreach ($uploadedFiles as $uploaded) {
+                $originalName = $uploaded->getClientOriginalName();
+                $extension = $uploaded->getClientOriginalExtension();
+                $size = $uploaded->getSize();
 
-        return back()->with('success', count($uploadedFiles) . ' fichier(s) uploadé(s) avec succès.');
+                // Store securely in private disk
+                $path = $uploaded->store('files/' . Auth::id() . '/' . date('Y/m'), 'private');
+
+                File::create([
+                    'name' => $originalName,
+                    'original_name' => $originalName,
+                    'path' => $path,
+                    'extension' => $extension,
+                    'size' => $size,
+                    'folder_id' => $request->folder_id ?? null,
+                    'user_id' => Auth::id(),
+                ]);
+            }
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => true, 'message' => count($uploadedFiles) . ' fichier(s) uploadé(s) avec succès.']);
+            }
+
+            return back()->with('success', count($uploadedFiles) . ' fichier(s) uploadé(s) avec succès.');
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Upload Error (User): ' . $e->getMessage(), [
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false, 
+                    'message' => 'Erreur interne du serveur lors de l\'upload : ' . $e->getMessage()
+                ], 500);
+            }
+
+            return back()->with('error', 'Erreur lors de l\'upload : ' . $e->getMessage());
+        }
     }
 
     public function download(File $file)

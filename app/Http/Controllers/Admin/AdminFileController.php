@@ -28,41 +28,57 @@ class AdminFileController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'files' => 'required|array',
-            'files.*' => 'required|file|max:3145728', // 3 Go max par fichier
-            'folder_id' => 'nullable|exists:folders,id'
-        ]);
-
-        $uploadedFiles = $request->file('files');
-
-        foreach ($uploadedFiles as $uploaded) {
-            // Stockage sur le disque 'private', organisé comme UserFileController
-            $path = $uploaded->store('files/' . auth()->id() . '/' . date('Y/m'), 'private');
-
-            $file = File::create([
-                'name' => $uploaded->getClientOriginalName(),
-                'original_name' => $uploaded->getClientOriginalName(),
-                'path' => $path,
-                'extension' => $uploaded->getClientOriginalExtension(),
-                'size' => $uploaded->getSize(),
-                'folder_id' => $request->folder_id,
-                'user_id' => auth()->id(),
+        try {
+            $request->validate([
+                'files' => 'required|array',
+                'files.*' => 'required|file|max:3145728', // 3 Go max par fichier
+                'folder_id' => 'nullable|exists:folders,id'
             ]);
 
-            \App\Services\AuditService::log(
-                'file_upload',
-                'File',
-                $file->id,
-                "A déposé le fichier : {$file->name}"
-            );
-        }
+            $uploadedFiles = $request->file('files');
 
-        if ($request->wantsJson() || $request->ajax()) {
-            return response()->json(['success' => true, 'message' => count($uploadedFiles) . ' fichier(s) transféré(s) avec succès.']);
-        }
+            foreach ($uploadedFiles as $uploaded) {
+                // Stockage sur le disque 'private', organisé comme UserFileController
+                $path = $uploaded->store('files/' . auth()->id() . '/' . date('Y/m'), 'private');
 
-        return back()->with('success', count($uploadedFiles) . ' fichier(s) transféré(s) avec succès.');
+                $file = File::create([
+                    'name' => $uploaded->getClientOriginalName(),
+                    'original_name' => $uploaded->getClientOriginalName(),
+                    'path' => $path,
+                    'extension' => $uploaded->getClientOriginalExtension(),
+                    'size' => $uploaded->getSize(),
+                    'folder_id' => $request->folder_id,
+                    'user_id' => auth()->id(),
+                ]);
+
+                \App\Services\AuditService::log(
+                    'file_upload',
+                    'File',
+                    $file->id,
+                    "A déposé le fichier : {$file->name}"
+                );
+            }
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => true, 'message' => count($uploadedFiles) . ' fichier(s) transféré(s) avec succès.']);
+            }
+
+            return back()->with('success', count($uploadedFiles) . ' fichier(s) transféré(s) avec succès.');
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Upload Error (Admin): ' . $e->getMessage(), [
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false, 
+                    'message' => 'Erreur interne du serveur lors du transfert : ' . $e->getMessage()
+                ], 500);
+            }
+
+            return back()->with('error', 'Erreur lors du transfert : ' . $e->getMessage());
+        }
     }
 
     public function show(File $file)

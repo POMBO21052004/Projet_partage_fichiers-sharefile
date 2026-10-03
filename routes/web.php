@@ -44,6 +44,14 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 // --- Protected Routes ---
 Route::middleware(['auth'])->group(function () {
     
+    Route::prefix('uploads/resumable')->name('uploads.resumable.')->group(function () {
+        Route::post('/init', [\App\Http\Controllers\Uploads\ResumableUploadController::class, 'init'])->name('init');
+        Route::post('/{uuid}/chunk', [\App\Http\Controllers\Uploads\ResumableUploadController::class, 'chunk'])->name('chunk');
+        Route::get('/{uuid}/status', [\App\Http\Controllers\Uploads\ResumableUploadController::class, 'status'])->name('status');
+        Route::post('/{uuid}/complete', [\App\Http\Controllers\Uploads\ResumableUploadController::class, 'complete'])->name('complete');
+        Route::delete('/{uuid}', [\App\Http\Controllers\Uploads\ResumableUploadController::class, 'cancel'])->name('cancel');
+    });
+    
     // --- Admin Space ---
     Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');

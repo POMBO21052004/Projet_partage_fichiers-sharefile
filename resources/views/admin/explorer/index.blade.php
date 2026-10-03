@@ -217,17 +217,15 @@
         <h3 class="text-xl font-bold text-on-surface dark:text-white mb-6">Transférer des fichiers</h3>
         <form id="upload-form" action="{{ route('admin.files.store') }}" method="POST" enctype="multipart/form-data" class="space-y-5">
             @csrf
-            <input type="hidden" name="folder_id" value="{{ $currentFolder?->id }}">
+            <input type="hidden" name="folder_id" id="upload-folder-id" value="{{ $currentFolder?->id }}">
             <label class="flex flex-col items-center gap-4 p-12 border-2 border-dashed border-outline-variant/30 dark:border-slate-700 hover:border-primary dark:hover:border-blue-500 rounded-3xl cursor-pointer transition-all group">
                 <span class="material-symbols-outlined text-6xl text-outline group-hover:text-primary transition-colors">upload_file</span>
                 <span id="upload-text" class="text-xs font-black uppercase tracking-widest text-outline text-center group-hover:text-on-surface dark:group-hover:text-white">Déposer ou cliquer (multi-sélection possible)</span>
                 <input type="file" name="files[]" id="upload-file-input" class="hidden" required multiple onchange="updateUploadText(this)">
             </label>
             
-            {{-- Liste des fichiers sélectionnés --}}
             <ul id="upload-file-list" class="hidden space-y-1 max-h-32 overflow-y-auto text-xs text-outline dark:text-slate-400"></ul>
             
-            {{-- Barre de progression (masquée par défaut) --}}
             <div id="upload-progress-container" class="hidden space-y-2">
                 <div class="flex justify-between items-center text-xs font-bold text-outline">
                     <span id="upload-progress-label">Envoi en cours...</span>
@@ -236,63 +234,36 @@
                 <div class="w-full h-2 bg-surface-container-highest dark:bg-slate-800 rounded-full overflow-hidden">
                     <div id="upload-progress-bar" class="h-full bg-primary dark:bg-blue-500 w-0 transition-all duration-300"></div>
                 </div>
+                <div class="flex justify-between items-center text-[10px] text-outline mt-1">
+                    <span id="upload-speed-text">-- Mo/s</span>
+                    <span id="upload-eta-text">-- restant</span>
+                </div>
             </div>
 
             <div class="flex gap-3" id="upload-actions">
-                <button type="button" onclick="document.getElementById('modal-upload').classList.add('hidden')"
+                <button type="button" onclick="cancelUploadModal()"
                     class="flex-1 py-4 text-sm font-black uppercase tracking-widest text-outline hover:bg-surface-container-low dark:hover:bg-slate-800 rounded-2xl transition-all">
                     Annuler
                 </button>
-                <button type="submit" class="flex-1 py-4 bg-primary dark:bg-blue-600 text-white text-sm font-black uppercase tracking-widest rounded-2xl shadow-lg shadow-primary/20">
+                <button type="submit" id="upload-submit-btn" class="flex-1 py-4 bg-primary dark:bg-blue-600 text-white text-sm font-black uppercase tracking-widest rounded-2xl shadow-lg shadow-primary/20">
                     Démarrer
+                </button>
+            </div>
+            
+            <div class="hidden gap-3" id="upload-retry-actions">
+                <button type="button" onclick="cancelUploadModal()"
+                    class="flex-1 py-4 text-sm font-black uppercase tracking-widest text-outline hover:bg-surface-container-low dark:hover:bg-slate-800 rounded-2xl transition-all">
+                    Fermer
+                </button>
+                <button type="button" onclick="resumeUpload()" id="upload-resume-btn" class="flex-1 py-4 bg-amber-500 text-white text-sm font-black uppercase tracking-widest rounded-2xl shadow-lg shadow-amber-500/20">
+                    Reprendre
                 </button>
             </div>
         </form>
     </div>
 </div>
 
-{{-- Modal : Confirmation de Suppression --}}
-<div id="modal-delete" class="hidden fixed inset-0 bg-on-surface/40 backdrop-blur-sm z-[80] flex items-center justify-center p-4">
-    <div class="bg-surface-container-lowest dark:bg-slate-900 rounded-3xl p-8 w-full max-w-md shadow-2xl ring-1 ring-outline-variant/10 text-center">
-        <div class="w-20 h-20 bg-rose-500/10 rounded-full flex items-center justify-center text-rose-500 mx-auto mb-6">
-            <span class="material-symbols-outlined text-5xl">warning</span>
-        </div>
-        <h3 class="text-xl font-bold text-on-surface dark:text-white mb-2" id="delete-modal-title">Confirmer la suppression</h3>
-        <p class="text-outline dark:text-slate-500 text-sm mb-8" id="delete-modal-text">Êtes-vous sûr de vouloir supprimer cet élément ?</p>
-        
-        <form id="form-delete" method="POST" class="flex gap-3">
-            @csrf
-            @method('DELETE')
-            <button type="button" onclick="document.getElementById('modal-delete').classList.add('hidden')"
-                class="flex-1 py-4 text-sm font-black uppercase tracking-widest text-outline hover:bg-surface-container-low dark:hover:bg-slate-800 rounded-2xl transition-all">
-                Annuler
-            </button>
-            <button type="submit" class="flex-1 py-4 bg-rose-500 text-white text-sm font-black uppercase tracking-widest rounded-2xl shadow-lg shadow-rose-500/20">
-                Supprimer
-            </button>
-        </form>
-    </div>
-</div>
-
-<div id="modal-move" class="hidden fixed inset-0 bg-on-surface/40 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
-    <div class="bg-surface-container-lowest dark:bg-slate-900 rounded-3xl p-8 w-full max-w-md shadow-2xl text-center ring-1 ring-outline-variant/10">
-        <div class="w-20 h-20 bg-primary/10 dark:bg-blue-400/10 rounded-full flex items-center justify-center text-primary dark:text-blue-400 mx-auto mb-6">
-            <span class="material-symbols-outlined text-4xl">drive_file_move</span>
-        </div>
-        <h3 class="text-xl font-bold text-on-surface dark:text-white mb-2">Confirmer le déplacement</h3>
-        <p class="text-outline dark:text-slate-500 text-sm mb-8 break-words">
-            Voulez-vous déplacer <span id="move-file-name" class="text-on-surface dark:text-white font-black break-all"></span> vers <span id="move-folder-name" class="text-primary dark:text-blue-400 font-black break-all"></span> ?
-        </p>
-        <div class="flex gap-3">
-            <button type="button" onclick="cancelMove()" class="flex-1 py-4 text-sm font-black uppercase tracking-widest text-outline hover:bg-surface-container-low rounded-2xl">
-                Annuler
-            </button>
-            <button type="button" onclick="confirmMove()" class="flex-1 py-4 bg-primary dark:bg-blue-600 text-white text-sm font-black uppercase tracking-widest rounded-2xl shadow-lg">
-                Déplacer
-            </button>
-        </div>
-    </div>
-</div>
+{{-- Modaux existants: suppression, deplacement... (déjà avant dans le fichier, je ne remplace que la fin) --}}
 
 <script>
 let draggedFile = null;
@@ -338,8 +309,6 @@ async function confirmMove() {
     } catch (error) { alert('Erreur réseau'); }
 }
 
-function openPermissions(fileId) { alert('Gestion des accès pour le fichier ID: ' + fileId); }
-    
 function openRenameModal(folderId, currentName) {
     const modal = document.getElementById('modal-rename');
     const form = document.getElementById('form-rename');
@@ -370,19 +339,18 @@ function openDeleteModal(actionUrl, isFolder) {
     modal.classList.remove('hidden');
 }
 
-function updateUploadText(input) {
+window.updateUploadText = function(input) {
     const list = document.getElementById('upload-file-list');
     const text = document.getElementById('upload-text');
-    const count = input.files.length;
     
-    if (count === 0) {
+    if (!input || !input.files || input.files.length === 0) {
         text.textContent = 'Déposer ou cliquer (multi-sélection possible)';
         list.classList.add('hidden');
         list.innerHTML = '';
         return;
     }
     
-    text.textContent = count + ' fichier(s) sélectionné(s)';
+    text.textContent = input.files.length + ' fichier(s) sélectionné(s)';
     list.innerHTML = '';
     list.classList.remove('hidden');
     
@@ -392,64 +360,214 @@ function updateUploadText(input) {
         li.innerHTML = `<span class="material-symbols-outlined text-sm">draft</span> ${file.name} <span class="ml-auto opacity-50">(${(file.size / 1024 / 1024).toFixed(2)} Mo)</span>`;
         list.appendChild(li);
     });
+};
+
+function cancelUploadModal() {
+    document.getElementById('modal-upload').classList.add('hidden');
+    document.getElementById('upload-form').reset();
+    window.updateUploadText(document.getElementById('upload-file-input'));
+    document.getElementById('upload-progress-container').classList.add('hidden');
+    document.getElementById('upload-actions').classList.remove('hidden');
+    document.getElementById('upload-retry-actions').classList.add('hidden');
 }
 
-// Upload AJAX avec progression
+let currentUploadContext = null;
+
 const uploadForm = document.getElementById('upload-form');
-if(uploadForm) {
-    uploadForm.addEventListener('submit', function(e) {
+if (uploadForm) {
+    uploadForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         
         const fileInput = document.getElementById('upload-file-input');
-        if (!fileInput.files.length) return;
+        if (!fileInput || !fileInput.files.length) return;
         
-        const formData = new FormData(this);
-        const actionsDiv = document.getElementById('upload-actions');
-        const fileList = document.getElementById('upload-file-list');
-        const progressContainer = document.getElementById('upload-progress-container');
-        const progressBar = document.getElementById('upload-progress-bar');
-        const progressText = document.getElementById('upload-progress-text');
-        const progressLabel = document.getElementById('upload-progress-label');
-        const total = fileInput.files.length;
+        const files = Array.from(fileInput.files);
         
-        actionsDiv.classList.add('hidden');
-        fileList.classList.add('hidden');
-        progressLabel.textContent = 'Envoi de ' + total + ' fichier(s)...';
-        progressContainer.classList.remove('hidden');
+        document.getElementById('upload-actions').classList.add('hidden');
+        document.getElementById('upload-progress-container').classList.remove('hidden');
+        
+        for (let i = 0; i < files.length; i++) {
+            await processFile(files[i]);
+        }
+        
+        document.getElementById('upload-progress-label').textContent = "Terminé !";
+        setTimeout(() => window.location.reload(), 1000);
+    });
+}
+
+async function processFile(file) {
+    const SMALL_FILE_THRESHOLD = 10 * 1024 * 1024;
+    const folderInput = document.getElementById('upload-folder-id');
+    const folderId = folderInput ? folderInput.value : null;
+    
+    if (file.size < SMALL_FILE_THRESHOLD) {
+        await uploadClassic(file, folderId);
+    } else {
+        await uploadResumable(file, folderId);
+    }
+}
+
+async function uploadClassic(file, folderId) {
+    return new Promise((resolve, reject) => {
+        const formData = new FormData();
+        formData.append('files[]', file);
+        if (folderId) formData.append('folder_id', folderId);
+        formData.append('_token', '{{ csrf_token() }}');
         
         const xhr = new XMLHttpRequest();
-        xhr.open('POST', this.action, true);
-        xhr.setRequestHeader('Accept', 'application/json');
+        xhr.open('POST', document.getElementById('upload-form').action, true);
         
-        xhr.upload.addEventListener('progress', function(e) {
-            if (e.lengthComputable) {
-                const percent = Math.round((e.loaded / e.total) * 100);
-                progressBar.style.width = percent + '%';
-                progressText.textContent = percent + '%';
-            }
-        });
+        xhr.upload.addEventListener('progress', e => updateProgress(e.loaded, e.total, file.name));
         
-        xhr.onload = function() {
-            if (xhr.status >= 200 && xhr.status < 300) {
-                progressText.textContent = "100%";
-                progressLabel.textContent = "Terminé !";
-                setTimeout(() => window.location.reload(), 500);
-            } else {
-                alert('Une erreur est survenue lors du transfert.');
-                actionsDiv.classList.remove('hidden');
-                progressContainer.classList.add('hidden');
-                progressBar.style.width = '0%';
-            }
+        xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) resolve();
+            else reject('Erreur classique');
         };
-        
-        xhr.onerror = function() {
-            alert('Erreur réseau.');
-            actionsDiv.classList.remove('hidden');
-            progressContainer.classList.add('hidden');
-        };
-        
+        xhr.onerror = () => reject('Erreur réseau');
         xhr.send(formData);
     });
+}
+
+async function uploadResumable(file, folderId) {
+    currentUploadContext = { file, folderId, uploadId: null, chunkSize: 0, totalChunks: 0, receivedChunks: [] };
+    
+    updateProgress(0, file.size, file.name, "Initialisation...");
+    
+    try {
+        const initRes = await fetch('/uploads/resumable/init', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+            body: JSON.stringify({
+                filename: file.name,
+                filesize: file.size,
+                mime_type: file.type,
+                folder_id: folderId || null
+            })
+        });
+        
+        if (!initRes.ok) throw new Error("Erreur init");
+        const initData = await initRes.json();
+        
+        currentUploadContext.uploadId = initData.upload_id;
+        currentUploadContext.chunkSize = initData.chunk_size;
+        currentUploadContext.totalChunks = initData.total_chunks;
+        
+        await uploadChunks();
+        
+        updateProgress(file.size, file.size, file.name, "Assemblage en cours...");
+        const completeRes = await fetch(`/uploads/resumable/${currentUploadContext.uploadId}/complete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+            body: JSON.stringify({
+                filename: file.name,
+                filesize: file.size
+            })
+        });
+        
+        if (!completeRes.ok) throw new Error("Erreur assemblage");
+        
+    } catch (e) {
+        document.getElementById('upload-progress-label').textContent = "Échec !";
+        document.getElementById('upload-progress-bar').classList.replace('bg-primary', 'bg-rose-500');
+        document.getElementById('upload-retry-actions').classList.remove('hidden');
+        throw e;
+    }
+}
+
+async function uploadChunks() {
+    const { file, uploadId, chunkSize, totalChunks } = currentUploadContext;
+    let uploadedBytes = 0;
+    let startTime = Date.now();
+    
+    for (let i = 0; i < totalChunks; i++) {
+        const start = i * chunkSize;
+        const end = Math.min(start + chunkSize, file.size);
+        const chunk = file.slice(start, end);
+        
+        const fd = new FormData();
+        fd.append('chunk', chunk);
+        fd.append('chunk_index', i);
+        fd.append('total_chunks', totalChunks);
+        fd.append('total_size', file.size);
+        fd.append('filename', file.name);
+        fd.append('_token', '{{ csrf_token() }}');
+        
+        let attempts = 0;
+        let success = false;
+        
+        while (attempts < 5 && !success) {
+            try {
+                const res = await fetch(`/uploads/resumable/${uploadId}/chunk`, {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json' },
+                    body: fd
+                });
+                if (!res.ok) throw new Error("Chunk error");
+                
+                uploadedBytes += (end - start);
+                updateProgress(uploadedBytes, file.size, file.name, "Envoi...");
+                
+                const elapsed = (Date.now() - startTime) / 1000;
+                if (elapsed > 0) {
+                    const speed = uploadedBytes / elapsed;
+                    document.getElementById('upload-speed-text').textContent = (speed / 1024 / 1024).toFixed(2) + " Mo/s";
+                }
+                
+                success = true;
+            } catch (err) {
+                attempts++;
+                if (attempts >= 5) throw err;
+                updateProgress(uploadedBytes, file.size, file.name, `Nouvelle tentative (${attempts}/5)...`);
+                await new Promise(r => setTimeout(r, Math.pow(2, attempts) * 1000));
+            }
+        }
+    }
+}
+
+window.resumeUpload = async function() {
+    if (!currentUploadContext) return;
+    document.getElementById('upload-retry-actions').classList.add('hidden');
+    document.getElementById('upload-progress-bar').classList.replace('bg-rose-500', 'bg-primary');
+    
+    try {
+        const res = await fetch(`/uploads/resumable/${currentUploadContext.uploadId}/status`, {
+            headers: { 'Accept': 'application/json' }
+        });
+        if (!res.ok) {
+            await uploadResumable(currentUploadContext.file, currentUploadContext.folderId);
+            return;
+        }
+        
+        const status = await res.json();
+        currentUploadContext.receivedChunks = status.received_chunks;
+        
+        await uploadChunks();
+        
+        updateProgress(currentUploadContext.file.size, currentUploadContext.file.size, currentUploadContext.file.name, "Assemblage en cours...");
+        const completeRes = await fetch(`/uploads/resumable/${currentUploadContext.uploadId}/complete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+            body: JSON.stringify({
+                filename: currentUploadContext.file.name,
+                filesize: currentUploadContext.file.size
+            })
+        });
+        if (!completeRes.ok) throw new Error("Erreur assemblage");
+        
+        document.getElementById('upload-progress-label').textContent = "Terminé !";
+        setTimeout(() => window.location.reload(), 1000);
+    } catch (e) {
+        document.getElementById('upload-progress-label').textContent = "Échec !";
+        document.getElementById('upload-progress-bar').classList.replace('bg-primary', 'bg-rose-500');
+        document.getElementById('upload-retry-actions').classList.remove('hidden');
+    }
+};
+
+function updateProgress(loaded, total, filename, label = "Envoi en cours...") {
+    const percent = Math.round((loaded / total) * 100);
+    document.getElementById('upload-progress-bar').style.width = percent + '%';
+    document.getElementById('upload-progress-text').textContent = percent + '%';
+    document.getElementById('upload-progress-label').textContent = label;
 }
 </script>
 @endsection
