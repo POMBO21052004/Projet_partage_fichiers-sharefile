@@ -217,6 +217,14 @@
                             <span x-show="!sidebarCollapsed"
                                 class="font-bold text-xs uppercase tracking-widest whitespace-nowrap">Coffre-fort</span>
                         </a>
+                        <a href="{{ route('user.my-files') }}"
+                            class="group flex items-center {{ request()->routeIs('user.my-files*') ? 'bg-primary text-white shadow-md shadow-primary/20' : 'text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800' }} transition-all duration-200 rounded-2xl"
+                            :class="sidebarCollapsed ? 'justify-center p-3' : 'gap-3 px-4 py-3'">
+                            <span
+                                class="material-symbols-outlined text-lg {{ request()->routeIs('user.my-files*') ? '' : 'group-hover:text-primary dark:group-hover:text-blue-400' }}">person_pin</span>
+                            <span x-show="!sidebarCollapsed"
+                                class="font-bold text-xs uppercase tracking-widest whitespace-nowrap">Mes fichiers</span>
+                        </a>
                     </div>
                 </div>
             </nav>

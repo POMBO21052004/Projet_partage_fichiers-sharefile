@@ -207,21 +207,20 @@
                     <div x-show="sidebarCollapsed" class="w-full h-px bg-outline-variant/10 my-3"></div>
                     <div class="space-y-1">
                         <a href="{{ route('admin.explorer') }}"
-                            class="group flex items-center {{ request()->routeIs('admin.explorer*') && !request()->has('owner') ? 'bg-primary text-white shadow-md shadow-primary/20' : 'text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800' }} transition-all duration-200 rounded-2xl"
+                            class="group flex items-center {{ request()->routeIs('admin.explorer*') ? 'bg-primary text-white shadow-md shadow-primary/20' : 'text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800' }} transition-all duration-200 rounded-2xl"
                             :class="sidebarCollapsed ? 'justify-center p-3' : 'gap-3 px-4 py-3'">
                             <span
-                                class="material-symbols-outlined text-lg {{ request()->routeIs('admin.explorer*') && !request()->has('owner') ? '' : 'group-hover:text-primary dark:group-hover:text-blue-400' }}">folder_shared</span>
+                                class="material-symbols-outlined text-lg {{ request()->routeIs('admin.explorer*') ? '' : 'group-hover:text-primary dark:group-hover:text-blue-400' }}">folder_shared</span>
                             <span x-show="!sidebarCollapsed"
                                 class="font-bold text-xs uppercase tracking-widest whitespace-nowrap">Coffre-fort</span>
                         </a>
-                        <a href="{{ route('admin.explorer') }}?owner=me"
-                            class="group flex items-center {{ request()->fullUrlIs(route('admin.explorer') . '?owner=me') ? 'bg-primary text-white shadow-md shadow-primary/20' : 'text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800' }} transition-all duration-200 rounded-2xl"
+                        <a href="{{ route('admin.my-files') }}"
+                            class="group flex items-center {{ request()->routeIs('admin.my-files*') ? 'bg-primary text-white shadow-md shadow-primary/20' : 'text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800' }} transition-all duration-200 rounded-2xl"
                             :class="sidebarCollapsed ? 'justify-center p-3' : 'gap-3 px-4 py-3'">
                             <span
-                                class="material-symbols-outlined text-lg {{ request()->fullUrlIs(route('admin.explorer') . '?owner=me') ? '' : 'group-hover:text-primary dark:group-hover:text-blue-400' }}">person_pin</span>
+                                class="material-symbols-outlined text-lg {{ request()->routeIs('admin.my-files*') ? '' : 'group-hover:text-primary dark:group-hover:text-blue-400' }}">person_pin</span>
                             <span x-show="!sidebarCollapsed"
-                                class="font-bold text-xs uppercase tracking-widest whitespace-nowrap">Mes
-                                fichiers</span>
+                                class="font-bold text-xs uppercase tracking-widest whitespace-nowrap">Mes fichiers</span>
                         </a>
                     </div>
                 </div>

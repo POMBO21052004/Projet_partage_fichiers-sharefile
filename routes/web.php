@@ -8,10 +8,12 @@ use App\Http\Controllers\Admin\AdminManagementController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\AdminProfileController;
 use App\Http\Controllers\Admin\AdminAuditController;
+use App\Http\Controllers\Admin\AdminMyFilesController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\User\UserDashboardController;
 use App\Http\Controllers\User\UserFileController;
 use App\Http\Controllers\User\UserFolderController;
+use App\Http\Controllers\User\UserMyFilesController;
 use App\Http\Controllers\User\UserProfileController;
 use App\Http\Controllers\ForgotPasswordController;
 use Illuminate\Support\Facades\Route;
@@ -71,6 +73,9 @@ Route::middleware(['auth'])->group(function () {
         
         // Audit Logs
         Route::get('/audit', [AdminAuditController::class, 'index'])->name('audit.index');
+
+        // Mes Fichiers (vue personnelle de l'admin)
+        Route::get('/my-files/{folder?}', [AdminMyFilesController::class, 'index'])->name('my-files');
         
         // Explorateur Admin (Vue globale)
         Route::get('/explorer/{folder?}', [AdminFolderController::class, 'index'])->name('explorer');
@@ -105,6 +110,9 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('/files/{file}/move', [UserFileController::class, 'move'])->name('files.move');
         Route::get('/files/download/{file}', [UserFileController::class, 'download'])->name('files.download');
         Route::delete('/files/{file}', [UserFileController::class, 'destroy'])->name('files.destroy');
+
+        // Mes Fichiers (vue personnelle de l'utilisateur)
+        Route::get('/my-files/{folder?}', [UserMyFilesController::class, 'index'])->name('my-files');
 
         // Profil Personnel Utilisateur
         Route::get('/profile', [UserProfileController::class, 'show'])->name('profile.show');
