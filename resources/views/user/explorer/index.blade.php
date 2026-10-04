@@ -313,7 +313,44 @@
     </div>
 </div>
 
-{{-- Modaux existants: suppression, deplacement... (déjà avant dans le fichier, je ne remplace que la fin) --}}
+{{-- Modal : Déplacer un fichier --}}
+<div id="modal-move" class="hidden fixed inset-0 bg-on-surface/40 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+    <div class="bg-surface-container-lowest dark:bg-slate-900 rounded-3xl p-8 w-full max-w-md shadow-2xl ring-1 ring-outline-variant/10">
+        <h3 class="text-xl font-bold text-on-surface dark:text-white mb-4">Déplacer l'élément</h3>
+        <p class="text-sm text-outline dark:text-slate-400 mb-6">
+            Déplacer <span id="move-file-name" class="font-bold text-on-surface dark:text-slate-200"></span> vers <span id="move-folder-name" class="font-bold text-on-surface dark:text-slate-200"></span> ?
+        </p>
+        <div class="flex gap-3">
+            <button type="button" onclick="cancelMove()"
+                class="flex-1 py-4 text-sm font-black uppercase tracking-widest text-outline hover:bg-surface-container-low dark:hover:bg-slate-800 rounded-2xl transition-all">
+                Annuler
+            </button>
+            <button type="button" onclick="confirmMove()" class="flex-1 py-4 bg-primary dark:bg-blue-600 text-white text-sm font-black uppercase tracking-widest rounded-2xl shadow-lg shadow-primary/20">
+                Déplacer
+            </button>
+        </div>
+    </div>
+</div>
+
+{{-- Modal : Confirmer suppression --}}
+<div id="modal-delete" class="hidden fixed inset-0 bg-on-surface/40 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+    <div class="bg-surface-container-lowest dark:bg-slate-900 rounded-3xl p-8 w-full max-w-md shadow-2xl ring-1 ring-outline-variant/10">
+        <h3 id="delete-modal-title" class="text-xl font-bold text-rose-600 dark:text-rose-500 mb-4">Confirmer la suppression</h3>
+        <p id="delete-modal-text" class="text-sm text-outline dark:text-slate-400 mb-6">Cette action est irréversible.</p>
+        <form id="form-delete" method="POST" class="flex gap-3">
+            @csrf
+            @method('DELETE')
+            <button type="button" onclick="document.getElementById('modal-delete').classList.add('hidden')"
+                class="flex-1 py-4 text-sm font-black uppercase tracking-widest text-outline hover:bg-surface-container-low dark:hover:bg-slate-800 rounded-2xl transition-all">
+                Annuler
+            </button>
+            <button type="submit" class="flex-1 py-4 bg-rose-600 hover:bg-rose-700 text-white text-sm font-black uppercase tracking-widest rounded-2xl shadow-lg shadow-rose-600/20">
+                Supprimer
+            </button>
+        </form>
+    </div>
+</div>
+
 
 <script>
 let draggedFile = null;
@@ -618,6 +655,10 @@ function updateProgress(loaded, total, filename, label = "Envoi en cours...") {
     document.getElementById('upload-progress-bar').style.width = percent + '%';
     document.getElementById('upload-progress-text').textContent = percent + '%';
     document.getElementById('upload-progress-label').textContent = label;
+
+    const loadedMb = (loaded / 1024 / 1024).toFixed(2);
+    const totalMb = (total / 1024 / 1024).toFixed(2);
+    document.getElementById('upload-eta-text').textContent = loadedMb + ' Mo / ' + totalMb + ' Mo';
 }
 </script>
 @endsection
