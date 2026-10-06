@@ -1,4 +1,4 @@
-﻿@extends('user.layouts.app')
+@extends('user.layouts.app')
 
 @section('title', 'Tableau de bord')
 
@@ -115,7 +115,14 @@
                         </div>
                         <div class="flex-1 min-w-0">
                             <p class="font-bold text-sm text-on-surface dark:text-slate-200 truncate" title="{{ $file->name }}">{{ $file->name }}</p>
-                            <p class="text-[10px] text-outline dark:text-slate-500 font-bold uppercase tracking-widest mt-0.5">{{ $file->created_at->diffForHumans() }}</p>
+                            <p class="text-[10px] text-outline dark:text-slate-500 font-bold uppercase tracking-widest mt-0.5 truncate" title="{{ $file->folder_path }}">
+                                @if($file->folder_id)
+                                    <a href="{{ route('user.explorer', ['folder' => $file->folder_id]) }}" class="hover:text-primary dark:hover:text-blue-400 hover:underline transition-colors">{{ $file->folder_path }}</a>
+                                @else
+                                    <a href="{{ route('user.explorer') }}" class="hover:text-primary dark:hover:text-blue-400 hover:underline transition-colors">{{ $file->folder_path }}</a>
+                                @endif
+                                • {{ $file->created_at->diffForHumans() }}
+                            </p>
                         </div>
                         <a href="{{ route('user.files.download', $file) }}" class="w-8 h-8 rounded-lg bg-surface-container-low dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-primary hover:text-white transition-all">
                             <span class="material-symbols-outlined text-sm">download</span>
@@ -146,7 +153,14 @@
                         </div>
                         <div class="flex-1 min-w-0">
                             <p class="font-bold text-sm text-on-surface dark:text-slate-200 truncate" title="{{ $file->name }}">{{ $file->name }}</p>
-                            <p class="text-[10px] text-outline dark:text-slate-500 font-bold uppercase tracking-widest mt-0.5">Partagé par {{ $file->user->name ?? 'Admin' }}</p>
+                            <p class="text-[10px] text-outline dark:text-slate-500 font-bold uppercase tracking-widest mt-0.5 truncate" title="{{ $file->folder_path }}">
+                                @if($file->folder_id)
+                                    <a href="{{ route('user.explorer', ['folder' => $file->folder_id]) }}" class="hover:text-primary dark:hover:text-blue-400 hover:underline transition-colors">{{ $file->folder_path }}</a>
+                                @else
+                                    <a href="{{ route('user.explorer') }}" class="hover:text-primary dark:hover:text-blue-400 hover:underline transition-colors">{{ $file->folder_path }}</a>
+                                @endif
+                                • Partagé par {{ $file->user->name ?? 'Admin' }}
+                            </p>
                         </div>
                         @if($file->permissions->where('user_id', Auth::id())->first()?->can_download)
                         <a href="{{ route('user.files.download', $file) }}" class="w-8 h-8 rounded-lg bg-surface-container-low dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-emerald-500 hover:text-white transition-all">
@@ -168,26 +182,26 @@
             </div>
         </div>
 
-        <!-- System Security Health -->
+        <!-- Réseau de Partage -->
         <div class="col-span-12 lg:col-span-4 glass-card p-6 rounded-2xl flex flex-col justify-between border border-white/20 dark:border-slate-800 shadow-xl overflow-hidden relative group">
             <div class="z-10 relative">
                 <div class="flex items-center justify-between mb-6">
                     <div class="w-12 h-12 bg-white/40 dark:bg-slate-800/40 backdrop-blur-xl rounded-xl flex items-center justify-center text-primary dark:text-blue-400 shadow-sm">
-                        <span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">security</span>
+                        <span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">hub</span>
                     </div>
                     <span class="px-3 py-1 bg-emerald-500 text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-lg">Actif</span>
                 </div>
-                <h3 class="text-lg font-black tracking-tight text-on-surface dark:text-white mb-2">Intégrité & Chiffrement</h3>
-                <p class="text-xs text-outline dark:text-slate-400 font-medium leading-relaxed">Vos documents sont sécurisés, chiffrés et sauvegardés de manière transparente sur nos serveurs sécurisés.</p>
+                <h3 class="text-lg font-black tracking-tight text-on-surface dark:text-white mb-2">Réseau de Partage</h3>
+                <p class="text-xs text-outline dark:text-slate-400 font-medium leading-relaxed">Vous avez rendu <strong>{{ $sharedByMeCount }} fichier(s)</strong> accessible(s) à d'autres membres sur la plateforme.</p>
             </div>
             
             <div class="z-10 relative mt-6">
                 <div class="flex justify-between items-end mb-3">
-                    <span class="text-xl font-black tracking-tighter text-on-surface dark:text-white">100.0%</span>
-                    <span class="text-[9px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Sécurisé</span>
+                    <span class="text-xl font-black tracking-tighter text-on-surface dark:text-white">{{ $sharePercent }}%</span>
+                    <span class="text-[9px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Ouverture</span>
                 </div>
                 <div class="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
-                    <div class="bg-emerald-500 h-full w-full"></div>
+                    <div class="bg-emerald-500 h-full" style="width: {{ $sharePercent }}%"></div>
                 </div>
             </div>
 

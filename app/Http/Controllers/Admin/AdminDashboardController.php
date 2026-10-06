@@ -21,6 +21,20 @@ class AdminDashboardController extends Controller
         $totalSizeBytes = File::sum('size');
         $totalSize = $this->formatBytes($totalSizeBytes);
 
+        // --- Croissance mensuelle (Ce mois vs Mois précédent) ---
+        $currentMonth = date('m');
+        $currentYear = date('Y');
+        $lastMonth = date('m', strtotime('-1 month'));
+        $lastMonthYear = date('Y', strtotime('-1 month'));
+
+        $filesThisMonth = File::whereMonth('created_at', $currentMonth)->whereYear('created_at', $currentYear)->count();
+        $filesLastMonth = File::whereMonth('created_at', $lastMonth)->whereYear('created_at', $lastMonthYear)->count();
+        $filesGrowth = $filesLastMonth > 0 ? round((($filesThisMonth - $filesLastMonth) / $filesLastMonth) * 100) : ($filesThisMonth > 0 ? 100 : 0);
+
+        $usersThisMonth = User::where('role', 'user')->whereMonth('created_at', $currentMonth)->whereYear('created_at', $currentYear)->count();
+        $usersLastMonth = User::where('role', 'user')->whereMonth('created_at', $lastMonth)->whereYear('created_at', $lastMonthYear)->count();
+        $usersGrowth = $usersLastMonth > 0 ? round((($usersThisMonth - $usersLastMonth) / $usersLastMonth) * 100) : ($usersThisMonth > 0 ? 100 : 0);
+
         // --- Données pour le graphique linéaire (Uploads vs Stockage) ---
         $monthlyUploads = [];
         $cumulativeStorage = [];
@@ -53,10 +67,22 @@ class AdminDashboardController extends Controller
         $years = File::selectRaw('YEAR(created_at) as year')->distinct()->pluck('year')->sortDesc();
         if ($years->isEmpty()) $years = [date('Y')];
 
+        // --- Données du Serveur (Occupation Disque) ---
+        $diskPath = base_path(); // Chemin racine du projet
+        $totalSpace = disk_total_space($diskPath);
+        $freeSpace = disk_free_space($diskPath);
+        $usedSpace = $totalSpace - $freeSpace;
+        
+        $serverUsagePercent = $totalSpace > 0 ? round(($usedSpace / $totalSpace) * 100, 1) : 0;
+        $serverTotal = $this->formatBytes($totalSpace, 0);
+        $serverUsed = $this->formatBytes($usedSpace, 0);
+
         return view('admin.dashboard', compact(
             'totalFiles', 'totalFolders', 'totalUsers', 'totalSize', 
+            'filesGrowth', 'usersGrowth',
             'recentFiles', 'monthlyUploads', 'cumulativeStorage', 
-            'distribution', 'year', 'years'
+            'distribution', 'year', 'years',
+            'serverUsagePercent', 'serverTotal', 'serverUsed'
         ));
     }
 

@@ -20,11 +20,28 @@ class UserFileController extends Controller
             ]);
 
             $uploadedFiles = $request->file('files');
+            $replacedFiles = [];
             
             foreach ($uploadedFiles as $uploaded) {
                 $originalName = $uploaded->getClientOriginalName();
                 $extension = $uploaded->getClientOriginalExtension();
                 $size = $uploaded->getSize();
+
+                // Vérification si un fichier du même nom existe
+                $existingFile = File::with('user')->where('name', $originalName)->where('folder_id', $request->folder_id)->first();
+                if ($existingFile) {
+                    $folderName = $request->folder_id ? \App\Models\Folder::find($request->folder_id)->name : 'la racine';
+                    $by = $existingFile->user_id === Auth::id() ? 'vous' : $existingFile->user->name;
+                    $replacedFiles[] = ['name' => $originalName, 'folder' => $folderName, 'by' => $by];
+
+                    if (Storage::disk('private')->exists($existingFile->path)) {
+                        Storage::disk('private')->delete($existingFile->path);
+                    } elseif (Storage::disk('public')->exists($existingFile->path)) {
+                        Storage::disk('public')->delete($existingFile->path);
+                    }
+                    $existingFile->permissions()->delete();
+                    $existingFile->delete();
+                }
 
                 // Store securely in private disk
                 $path = $uploaded->store('files/' . Auth::id() . '/' . date('Y/m'), 'private');
@@ -41,7 +58,11 @@ class UserFileController extends Controller
             }
 
             if ($request->wantsJson() || $request->ajax()) {
-                return response()->json(['success' => true, 'message' => count($uploadedFiles) . ' fichier(s) uploadé(s) avec succès.']);
+                return response()->json([
+                    'success' => true, 
+                    'message' => count($uploadedFiles) . ' fichier(s) uploadé(s) avec succès.',
+                    'replaced_files' => $replacedFiles
+                ]);
             }
 
             return back()->with('success', count($uploadedFiles) . ' fichier(s) uploadé(s) avec succès.');

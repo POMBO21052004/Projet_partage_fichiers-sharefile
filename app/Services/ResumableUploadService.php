@@ -131,10 +131,10 @@ class ResumableUploadService
         ];
     }
 
-    public function complete(UploadSession $session, string $originalFilename, int $declaredSize, ?string $globalChecksum = null): File
+    public function complete(UploadSession $session, string $originalFilename, int $declaredSize, ?string $globalChecksum = null): array
     {
         if ($session->isCompleted()) {
-            return $session->file; // Idempotence
+            return ['file' => $session->file, 'replaced_files' => []]; // Idempotence
         }
 
         $missing = $session->missing_chunks;
@@ -193,6 +193,22 @@ class ResumableUploadService
             throw new Exception("Somme de contrôle du fichier complet invalide.");
         }
 
+        $replacedFiles = [];
+        $existing = File::with('user')->where('name', $session->original_name)->where('folder_id', $session->folder_id)->first();
+        if ($existing) {
+            $folderName = $session->folder_id ? Folder::find($session->folder_id)->name : 'la racine';
+            $by = $existing->user_id === $session->user_id ? 'vous' : $existing->user->name;
+            $replacedFiles[] = ['name' => $session->original_name, 'folder' => $folderName, 'by' => $by];
+
+            if (Storage::disk('private')->exists($existing->path)) {
+                Storage::disk('private')->delete($existing->path);
+            } elseif (Storage::disk('public')->exists($existing->path)) {
+                Storage::disk('public')->delete($existing->path);
+            }
+            $existing->permissions()->delete();
+            $existing->delete();
+        }
+
         $file = DB::transaction(function () use ($session, $finalRelPath, $assembledSize) {
             $file = File::create([
                 'name' => $session->original_name,
@@ -217,7 +233,7 @@ class ResumableUploadService
 
         $this->cleanupChunks($session);
 
-        return $file;
+        return ['file' => $file, 'replaced_files' => $replacedFiles];
     }
 
     public function cancel(UploadSession $session): void

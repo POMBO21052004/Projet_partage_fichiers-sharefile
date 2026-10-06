@@ -255,6 +255,22 @@
     </div>
 </div>
 
+{{-- Modal : Fichiers remplacés --}}
+<div id="modal-replaced" class="hidden fixed inset-0 bg-on-surface/40 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+    <div class="bg-surface-container-lowest dark:bg-slate-900 rounded-3xl p-8 w-full max-w-md shadow-2xl ring-1 ring-outline-variant/10">
+        <h3 class="text-xl font-bold text-amber-500 mb-4 flex items-center gap-2">
+            <span class="material-symbols-outlined">info</span> Fichiers remplacés
+        </h3>
+        <p class="text-sm text-outline dark:text-slate-400 mb-4">
+            Les fichiers suivants existaient déjà et ont été mis à jour avec votre nouvelle version :
+        </p>
+        <ul id="replaced-files-list" class="space-y-2 mb-6 max-h-40 overflow-y-auto text-sm">
+        </ul>
+        <button type="button" onclick="window.location.reload()" class="w-full py-4 bg-primary text-white text-sm font-black uppercase tracking-widest rounded-2xl shadow-lg shadow-primary/20">
+            Fermer et actualiser
+        </button>
+    </div>
+</div>
 <script>
 function openDeleteModal(actionUrl) {
     document.getElementById('form-delete').action = actionUrl;
@@ -301,11 +317,19 @@ if (uploadForm) {
         const files = Array.from(fileInput.files);
         document.getElementById('upload-actions').classList.add('hidden');
         document.getElementById('upload-progress-container').classList.remove('hidden');
+        let allReplaced = [];
         for (let i = 0; i < files.length; i++) {
-            await processFile(files[i]);
+            const res = await processFile(files[i]);
+            if (res && res.replaced_files && res.replaced_files.length > 0) {
+                allReplaced = allReplaced.concat(res.replaced_files);
+            }
         }
-        document.getElementById('upload-progress-label').textContent = "Terminé !";
-        setTimeout(() => window.location.reload(), 1000);
+        if (allReplaced.length > 0) {
+            showReplacementModal(allReplaced);
+        } else {
+            document.getElementById('upload-progress-label').textContent = "Terminé !";
+            setTimeout(() => window.location.reload(), 1000);
+        }
     });
 }
 
@@ -313,9 +337,9 @@ async function processFile(file) {
     const SMALL = 10 * 1024 * 1024;
     const folderId = document.getElementById('upload-folder-id')?.value || null;
     if (file.size < SMALL) {
-        await uploadClassic(file, folderId);
+        return await uploadClassic(file, folderId);
     } else {
-        await uploadResumable(file, folderId);
+        return await uploadResumable(file, folderId);
     }
 }
 
@@ -328,7 +352,7 @@ async function uploadClassic(file, folderId) {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', document.getElementById('upload-form').action, true);
         xhr.upload.addEventListener('progress', e => updateProgress(e.loaded, e.total));
-        xhr.onload = () => xhr.status >= 200 && xhr.status < 300 ? resolve() : reject();
+        xhr.onload = () => xhr.status >= 200 && xhr.status < 300 ? resolve(JSON.parse(xhr.responseText)) : reject();
         xhr.onerror = () => reject();
         xhr.send(fd);
     });
@@ -356,6 +380,7 @@ async function uploadResumable(file, folderId) {
             body: JSON.stringify({ filename: file.name, filesize: file.size })
         });
         if (!cr.ok) throw new Error("complete");
+        return await cr.json();
     } catch (e) {
         document.getElementById('upload-progress-label').textContent = "Échec !";
         document.getElementById('upload-progress-bar').classList.replace('bg-primary', 'bg-rose-500');
@@ -406,14 +431,31 @@ window.resumeUpload = async function() {
             body: JSON.stringify({ filename: currentUploadContext.file.name, filesize: currentUploadContext.file.size })
         });
         if (!cr.ok) throw new Error();
-        document.getElementById('upload-progress-label').textContent = "Terminé !";
-        setTimeout(() => window.location.reload(), 1000);
+        const res = await cr.json();
+        if (res && res.replaced_files && res.replaced_files.length > 0) {
+            showReplacementModal(res.replaced_files);
+        } else {
+            document.getElementById('upload-progress-label').textContent = "Terminé !";
+            setTimeout(() => window.location.reload(), 1000);
+        }
     } catch {
         document.getElementById('upload-progress-label').textContent = "Échec !";
         document.getElementById('upload-progress-bar').classList.replace('bg-primary', 'bg-rose-500');
         document.getElementById('upload-retry-actions').classList.remove('hidden');
     }
 };
+
+function showReplacementModal(files) {
+    document.getElementById('modal-upload').classList.add('hidden');
+    const list = document.getElementById('replaced-files-list');
+    list.innerHTML = files.map(f => `
+        <li class="bg-surface-container-low dark:bg-slate-800 p-3 rounded-xl mb-2">
+            <strong class="text-on-surface dark:text-white">${f.name}</strong><br>
+            <span class="text-xs text-outline">Dossier: ${f.folder} | Ancien uploader: ${f.by}</span>
+        </li>
+    `).join('');
+    document.getElementById('modal-replaced').classList.remove('hidden');
+}
 
 function updateProgress(loaded, total, label = "Envoi en cours...") {
     const pct = Math.round((loaded / total) * 100);

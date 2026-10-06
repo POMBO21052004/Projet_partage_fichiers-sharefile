@@ -36,14 +36,33 @@ class AdminFileController extends Controller
             ]);
 
             $uploadedFiles = $request->file('files');
+            $replacedFiles = [];
 
             foreach ($uploadedFiles as $uploaded) {
+                $originalName = $uploaded->getClientOriginalName();
+                
+                // Vérification si un fichier du même nom existe
+                $existingFile = File::with('user')->where('name', $originalName)->where('folder_id', $request->folder_id)->first();
+                if ($existingFile) {
+                    $folderName = $request->folder_id ? \App\Models\Folder::find($request->folder_id)->name : 'la racine';
+                    $by = $existingFile->user_id === auth()->id() ? 'vous' : $existingFile->user->name;
+                    $replacedFiles[] = ['name' => $originalName, 'folder' => $folderName, 'by' => $by];
+
+                    if (Storage::disk('private')->exists($existingFile->path)) {
+                        Storage::disk('private')->delete($existingFile->path);
+                    } elseif (Storage::disk('public')->exists($existingFile->path)) {
+                        Storage::disk('public')->delete($existingFile->path);
+                    }
+                    $existingFile->permissions()->delete();
+                    $existingFile->delete();
+                }
+
                 // Stockage sur le disque 'private', organisé comme UserFileController
                 $path = $uploaded->store('files/' . auth()->id() . '/' . date('Y/m'), 'private');
 
                 $file = File::create([
-                    'name' => $uploaded->getClientOriginalName(),
-                    'original_name' => $uploaded->getClientOriginalName(),
+                    'name' => $originalName,
+                    'original_name' => $originalName,
                     'path' => $path,
                     'extension' => $uploaded->getClientOriginalExtension(),
                     'size' => $uploaded->getSize(),
@@ -60,7 +79,11 @@ class AdminFileController extends Controller
             }
 
             if ($request->wantsJson() || $request->ajax()) {
-                return response()->json(['success' => true, 'message' => count($uploadedFiles) . ' fichier(s) transféré(s) avec succès.']);
+                return response()->json([
+                    'success' => true, 
+                    'message' => count($uploadedFiles) . ' fichier(s) transféré(s) avec succès.',
+                    'replaced_files' => $replacedFiles
+                ]);
             }
 
             return back()->with('success', count($uploadedFiles) . ' fichier(s) transféré(s) avec succès.');

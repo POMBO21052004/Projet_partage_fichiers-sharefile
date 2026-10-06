@@ -32,7 +32,9 @@
                 <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
                     <span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 1;">description</span>
                 </div>
-                <span class="text-[9px] font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-full uppercase tracking-widest">+12%</span>
+                <span class="text-[9px] font-black {{ $filesGrowth >= 0 ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20' : 'text-rose-600 bg-rose-50 dark:bg-rose-900/20' }} px-2 py-0.5 rounded-full uppercase tracking-widest">
+                    {{ $filesGrowth > 0 ? '+' : '' }}{{ $filesGrowth }}%
+                </span>
             </div>
             <p class="text-[9px] uppercase tracking-widest text-outline dark:text-slate-500 font-black">Fichiers totaux</p>
             <h3 class="text-xl font-black text-on-surface dark:text-white tracking-tighter mt-0.5">{{ number_format($totalFiles) }}</h3>
@@ -43,7 +45,9 @@
                 <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
                     <span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 1;">group</span>
                 </div>
-                <span class="text-[9px] font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-full uppercase tracking-widest">+4%</span>
+                <span class="text-[9px] font-black {{ $usersGrowth >= 0 ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20' : 'text-rose-600 bg-rose-50 dark:bg-rose-900/20' }} px-2 py-0.5 rounded-full uppercase tracking-widest">
+                    {{ $usersGrowth > 0 ? '+' : '' }}{{ $usersGrowth }}%
+                </span>
             </div>
             <p class="text-[9px] uppercase tracking-widest text-outline dark:text-slate-500 font-black">Utilisateurs actifs</p>
             <h3 class="text-xl font-black text-on-surface dark:text-white tracking-tighter mt-0.5">{{ number_format($totalUsers) }}</h3>
@@ -129,7 +133,14 @@
                                     </div>
                                     <div>
                                         <p class="text-xs font-bold text-on-surface dark:text-slate-200">{{ $file->name }}</p>
-                                        <p class="text-[9px] text-outline dark:text-slate-500 uppercase font-black">{{ $file->extension }}</p>
+                                        <p class="text-[9px] text-outline dark:text-slate-500 uppercase font-black truncate max-w-[200px]" title="{{ $file->folder_path }}">
+                                            {{ $file->extension }} • 
+                                            @if($file->folder_id)
+                                                <a href="{{ route('admin.explorer', ['folder' => $file->folder_id]) }}" class="hover:text-primary dark:hover:text-blue-400 hover:underline transition-colors">{{ $file->folder_path }}</a>
+                                            @else
+                                                <a href="{{ route('admin.explorer') }}" class="hover:text-primary dark:hover:text-blue-400 hover:underline transition-colors">{{ $file->folder_path }}</a>
+                                            @endif
+                                        </p>
                                     </div>
                                 </div>
                             </td>
@@ -137,7 +148,8 @@
                                 <span class="text-[10px] font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md">{{ $file->user->name ?? '-' }}</span>
                             </td>
                             <td class="py-4 text-right">
-                                <span class="text-xs font-black text-on-surface dark:text-white">{{ number_format($file->size / 1024 / 1024, 2) }} Mo</span>
+                                <p class="text-xs font-black text-on-surface dark:text-white">{{ number_format($file->size / 1024 / 1024, 2) }} Mo</p>
+                                <p class="text-[9px] text-outline dark:text-slate-500 font-bold uppercase tracking-widest mt-0.5">{{ $file->created_at->format('d/m/Y H:i') }}</p>
                             </td>
                         </tr>
                         @endforeach
@@ -146,26 +158,26 @@
             </div>
         </div>
 
-        <!-- System Health (Style Restauré) -->
+        <!-- Espace Serveur Physique -->
         <div class="col-span-12 lg:col-span-4 glass-card p-8 rounded-2xl flex flex-col justify-between border border-white/20 dark:border-slate-800 shadow-xl overflow-hidden relative group">
             <div class="z-10 relative">
                 <div class="flex items-center justify-between mb-8">
                     <div class="w-12 h-12 bg-white/40 dark:bg-slate-800/40 backdrop-blur-xl rounded-xl flex items-center justify-center text-primary dark:text-blue-400 shadow-sm">
-                        <span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">security</span>
+                        <span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">dns</span>
                     </div>
-                    <span class="px-3 py-1 bg-emerald-500 text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-lg">Actif</span>
+                    <span class="px-3 py-1 {{ $serverUsagePercent > 80 ? 'bg-rose-500' : 'bg-emerald-500' }} text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-lg">En Ligne</span>
                 </div>
-                <h3 class="text-xl font-black tracking-tight text-on-surface dark:text-white mb-2">Santé du Système</h3>
-                <p class="text-sm text-outline dark:text-slate-400 font-medium leading-relaxed">Stockage chiffré et redondance opérationnelle à 100%.</p>
+                <h3 class="text-xl font-black tracking-tight text-on-surface dark:text-white mb-2">Espace Serveur</h3>
+                <p class="text-sm text-outline dark:text-slate-400 font-medium leading-relaxed">Occupation réelle du disque dur du serveur ({{ $serverUsed }} / {{ $serverTotal }}).</p>
             </div>
             
             <div class="z-10 relative mt-8">
                 <div class="flex justify-between items-end mb-3">
-                    <span class="text-2xl font-black tracking-tighter text-on-surface dark:text-white">100.0%</span>
-                    <span class="text-[9px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Synchronisé</span>
+                    <span class="text-2xl font-black tracking-tighter text-on-surface dark:text-white">{{ $serverUsagePercent }}%</span>
+                    <span class="text-[9px] font-black uppercase tracking-widest {{ $serverUsagePercent > 80 ? 'text-rose-500' : 'text-emerald-600 dark:text-emerald-400' }}">Utilisé</span>
                 </div>
                 <div class="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
-                    <div class="bg-emerald-500 h-full w-full"></div>
+                    <div class="{{ $serverUsagePercent > 80 ? 'bg-rose-500' : 'bg-emerald-500' }} h-full" style="width: {{ $serverUsagePercent }}%"></div>
                 </div>
             </div>
 

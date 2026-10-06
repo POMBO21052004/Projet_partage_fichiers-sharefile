@@ -58,10 +58,14 @@ class UserDashboardController extends Controller
         $years = File::where('user_id', $user->id)->selectRaw('YEAR(created_at) as year')->distinct()->pluck('year')->sortDesc();
         if ($years->isEmpty()) $years = [date('Y')];
 
+        // --- Données du réseau de partage (Fichiers que j'ai partagés) ---
+        $sharedByMeCount = File::where('user_id', $user->id)->has('permissions')->count();
+        $sharePercent = $stats['my_files_count'] > 0 ? round(($sharedByMeCount / $stats['my_files_count']) * 100, 1) : 0;
+
         return view('user.dashboard', compact(
             'stats', 'myRecentFiles', 'recentSharedFiles', 
             'monthlyUploads', 'cumulativeStorage', 'distribution', 
-            'year', 'years'
+            'year', 'years', 'sharedByMeCount', 'sharePercent'
         ));
     }
 }

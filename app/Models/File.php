@@ -37,4 +37,20 @@ class File extends Model
                     ->withPivot('can_download')
                     ->withTimestamps();
     }
+
+    public function getFolderPathAttribute()
+    {
+        if (!$this->folder_id) {
+            return 'Racine';
+        }
+
+        $path = [];
+        $current = $this->folder;
+        while ($current) {
+            array_unshift($path, $current->name);
+            $current = $current->parent;
+        }
+
+        return 'Racine > ' . implode(' > ', $path);
+    }
 }

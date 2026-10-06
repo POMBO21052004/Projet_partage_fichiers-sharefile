@@ -111,12 +111,13 @@ class ResumableUploadController extends Controller
                 return response()->json(['success' => false, 'message' => 'Session annulée ou expirée.'], 409);
             }
 
-            $file = $this->service->complete(
+            $result = $this->service->complete(
                 $session,
                 $request->input('filename'),
                 $request->input('filesize'),
                 $request->input('checksum')
             );
+            $file = $result['file'];
 
             return response()->json([
                 'success' => true,
@@ -126,7 +127,8 @@ class ResumableUploadController extends Controller
                     'name' => $file->name,
                     'size' => $file->size,
                     'extension' => $file->extension
-                ]
+                ],
+                'replaced_files' => $result['replaced_files']
             ]);
         } catch (\Exception $e) {
             Log::error("Erreur lors de l'assemblage du fichier : " . $e->getMessage(), ['uuid' => $uuid]);
