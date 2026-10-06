@@ -1,4 +1,4 @@
-﻿@extends('admin.layouts.app')
+@extends('admin.layouts.app')
 
 @section('title', 'Journal d\'Audit')
 
@@ -91,6 +91,19 @@
                             <p class="text-xs text-on-surface-variant dark:text-slate-400 max-w-md truncate font-medium" title="{{ $log->description }}">
                                 {{ $log->description }}
                             </p>
+                            @if($log->resource_type === 'File' || $log->resource_type === 'App\Models\File')
+                                @php $file = \App\Models\File::find($log->resource_id); @endphp
+                                @if($file)
+                                    <p class="text-[9px] text-outline dark:text-slate-500 font-black uppercase tracking-widest mt-1.5 truncate" title="{{ $file->folder_path }}">
+                                        <span class="material-symbols-outlined text-[10px] align-middle mr-0.5">folder</span>
+                                        @if($file->folder_id)
+                                            <a href="{{ route('admin.explorer', ['folder' => $file->folder_id]) }}" class="hover:text-primary dark:hover:text-blue-400 hover:underline transition-colors">{{ $file->folder_path }}</a>
+                                        @else
+                                            <a href="{{ route('admin.explorer') }}" class="hover:text-primary dark:hover:text-blue-400 hover:underline transition-colors">{{ $file->folder_path }}</a>
+                                        @endif
+                                    </p>
+                                @endif
+                            @endif
                         </td>
                         <td class="px-8 py-6">
                             <div class="flex items-center gap-2 text-outline dark:text-slate-500">
@@ -110,7 +123,7 @@
 
         @if($logs->hasPages())
         <div class="px-8 py-6 bg-slate-50/50 dark:bg-slate-900/50 border-t border-black/5 dark:border-white/10">
-            {{ $logs->links() }}
+            {{ $logs->links('vendor.pagination.custom') }}
         </div>
         @endif
     </div>

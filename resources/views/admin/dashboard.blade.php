@@ -32,7 +32,7 @@
                 <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
                     <span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 1;">description</span>
                 </div>
-                <span class="text-[9px] font-black {{ $filesGrowth >= 0 ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20' : 'text-rose-600 bg-rose-50 dark:bg-rose-900/20' }} px-2 py-0.5 rounded-full uppercase tracking-widest">
+                <span title="Évolution par rapport au mois précédent" class="cursor-help text-[9px] font-black {{ $filesGrowth >= 0 ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20' : 'text-rose-600 bg-rose-50 dark:bg-rose-900/20' }} px-2 py-0.5 rounded-full uppercase tracking-widest">
                     {{ $filesGrowth > 0 ? '+' : '' }}{{ $filesGrowth }}%
                 </span>
             </div>
@@ -45,7 +45,7 @@
                 <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
                     <span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 1;">group</span>
                 </div>
-                <span class="text-[9px] font-black {{ $usersGrowth >= 0 ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20' : 'text-rose-600 bg-rose-50 dark:bg-rose-900/20' }} px-2 py-0.5 rounded-full uppercase tracking-widest">
+                <span title="Évolution par rapport au mois précédent" class="cursor-help text-[9px] font-black {{ $usersGrowth >= 0 ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20' : 'text-rose-600 bg-rose-50 dark:bg-rose-900/20' }} px-2 py-0.5 rounded-full uppercase tracking-widest">
                     {{ $usersGrowth > 0 ? '+' : '' }}{{ $usersGrowth }}%
                 </span>
             </div>
@@ -167,8 +167,8 @@
                     </div>
                     <span class="px-3 py-1 {{ $serverUsagePercent > 80 ? 'bg-rose-500' : 'bg-emerald-500' }} text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-lg">En Ligne</span>
                 </div>
-                <h3 class="text-xl font-black tracking-tight text-on-surface dark:text-white mb-2">Espace Serveur</h3>
-                <p class="text-sm text-outline dark:text-slate-400 font-medium leading-relaxed">Occupation réelle du disque dur du serveur ({{ $serverUsed }} / {{ $serverTotal }}).</p>
+                <h3 class="text-xl font-black tracking-tight text-on-surface dark:text-white mb-2">Espace de Stockage</h3>
+                <p class="text-sm text-outline dark:text-slate-400 font-medium leading-relaxed">Occupation de votre quota Hostinger alloué ({{ $serverUsed }} / {{ $serverTotal }}).</p>
             </div>
             
             <div class="z-10 relative mt-8">

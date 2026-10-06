@@ -67,22 +67,21 @@ class AdminDashboardController extends Controller
         $years = File::selectRaw('YEAR(created_at) as year')->distinct()->pluck('year')->sortDesc();
         if ($years->isEmpty()) $years = [date('Y')];
 
-        // --- Données du Serveur (Occupation Disque) ---
-        $diskPath = base_path(); // Chemin racine du projet
-        $totalSpace = disk_total_space($diskPath);
-        $freeSpace = disk_free_space($diskPath);
-        $usedSpace = $totalSpace - $freeSpace;
+        // --- Données du Serveur (Occupation Quota) ---
+        $quotaGB = env('STORAGE_QUOTA_GB', 50); // 50 Go alloués par l'hébergeur
+        $totalSpace = $quotaGB * 1024 * 1024 * 1024; // En octets
+        $usedSpace = $totalSizeBytes; // Calculé plus haut : File::sum('size')
         
         $serverUsagePercent = $totalSpace > 0 ? round(($usedSpace / $totalSpace) * 100, 1) : 0;
-        $serverTotal = $this->formatBytes($totalSpace, 0);
-        $serverUsed = $this->formatBytes($usedSpace, 0);
+        $serverTotal = $quotaGB . ' Go';
+        $serverUsed = $this->formatBytes($usedSpace, 2);
 
         return view('admin.dashboard', compact(
             'totalFiles', 'totalFolders', 'totalUsers', 'totalSize', 
             'filesGrowth', 'usersGrowth',
             'recentFiles', 'monthlyUploads', 'cumulativeStorage', 
             'distribution', 'year', 'years',
-            'serverUsagePercent', 'serverTotal', 'serverUsed'
+            'serverUsagePercent', 'serverTotal', 'serverUsed', 'quotaGB'
         ));
     }
 
