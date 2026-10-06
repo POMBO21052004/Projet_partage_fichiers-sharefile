@@ -4,7 +4,25 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Mon Espace - Share File</title>
+
+    <!-- Sécurité & Référencement -->
+    <meta name="robots" content="noindex, nofollow"> {{-- espace privé non indexé --}}
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="description" content="Votre espace personnel ShareFile - Accédez, gérez et partagez vos fichiers de manière sécurisée et privée.">
+    <meta name="author" content="Design Atelier">
+
+    <!-- Icône & Thème -->
+    <link rel="icon" type="image/png" href="{{ asset('assets/logo.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('assets/logo.png') }}">
+    <meta name="theme-color" content="#00488d">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Mon Espace - ShareFile">
+    <meta property="og:description" content="Plateforme professionnelle de partage de fichiers sécurisés.">
+    <meta property="og:image" content="{{ asset('assets/logo.png') }}">
+    <meta property="og:type" content="website">
+
+    <title>Mon Espace - Share File - @yield('title', '')</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script>
         tailwind.config = {

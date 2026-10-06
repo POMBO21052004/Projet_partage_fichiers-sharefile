@@ -4,6 +4,23 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    <!-- SEO & Méta-données -->
+    <meta name="description" content="ShareFile est une plateforme professionnelle et sécurisée de stockage et de partage de fichiers. Accédez à vos documents partout, tout le temps.">
+    <meta name="keywords" content="stockage en ligne, partage de fichiers, cloud sécurisé, coffre-fort numérique, ShareFile">
+    <meta name="author" content="Design Atelier">
+    
+    <!-- Open Graph / Réseaux Sociaux -->
+    <meta property="og:title" content="Connexion - ShareFile">
+    <meta property="og:description" content="Connectez-vous à votre espace sécurisé ShareFile pour gérer et partager vos fichiers.">
+    <meta property="og:image" content="{{ asset('assets/logo.png') }}">
+    <meta property="og:type" content="website">
+    
+    <!-- Icônes & Thème -->
+    <link rel="icon" type="image/png" href="{{ asset('assets/logo.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('assets/logo.png') }}">
+    <meta name="theme-color" content="#020617"> <!-- slate-950 -->
+
     <title>Connexion - Share File</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
